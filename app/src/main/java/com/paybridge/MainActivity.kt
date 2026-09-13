@@ -21,6 +21,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.paybridge.ui.home.HomeScreen
 import com.paybridge.ui.onboarding.PermissionSetupScreen
 import com.paybridge.ui.onboarding.TrustScreen
 import com.paybridge.ui.theme.PayBridgeTheme
@@ -90,16 +91,37 @@ private fun PayBridgeNavHost(app: PayBridgeApp) {
             )
         }
         composable("home") {
-            // Replaced by the real HomeScreen (listener banner, unparsed-notification warning,
-            // pending claims, "+ New Expected Payment") in the next commit.
-            PlaceholderHome()
+            val pendingClaims by app.claimRepository.observeAllClaims().collectAsState(initial = emptyList())
+            val unparsedCounts by app.unparsedNotificationRepository.countsLast24h()
+                .collectAsState(initial = emptyMap())
+
+            HomeScreen(
+                listenerEnabled = listenerEnabled,
+                unparsedCounts = unparsedCounts,
+                pendingClaims = pendingClaims.filter { it.status == "PENDING" },
+                onNewClaim = { navController.navigate("new-claim") },
+                onClaimClick = { id -> navController.navigate("claim/$id") },
+                onViewHistory = { navController.navigate("history") },
+            )
+        }
+        composable("new-claim") {
+            // Replaced by the real NewClaimScreen in the next commit.
+            PlaceholderScreen("New expected payment — coming up next")
+        }
+        composable("claim/{claimId}") {
+            // Replaced by the real ClaimResultScreen in the next commit.
+            PlaceholderScreen("Claim result — coming up next")
+        }
+        composable("history") {
+            // Replaced by the real HistoryScreen in a later commit.
+            PlaceholderScreen("History — coming up next")
         }
     }
 }
 
 @Composable
-private fun PlaceholderHome() {
+private fun PlaceholderScreen(label: String) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("PayBridge — home screen coming up next")
+        Text(label)
     }
 }

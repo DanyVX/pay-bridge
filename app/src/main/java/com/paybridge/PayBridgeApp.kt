@@ -8,6 +8,7 @@ import com.paybridge.data.local.OnboardingPreferences
 import com.paybridge.data.local.PayBridgeDatabase
 import com.paybridge.data.repository.ClaimRepository
 import com.paybridge.data.repository.ListenerStatusRepository
+import com.paybridge.data.repository.UnparsedNotificationRepository
 import com.paybridge.domain.listener.ListenerStatusChecker
 import com.paybridge.domain.matching.MatchingEngine
 import com.paybridge.parser.ParserRegistry
@@ -50,6 +51,10 @@ class PayBridgeApp : Application() {
             listenerHeartbeatDao = database.listenerHeartbeatDao(),
             timeProvider = timeProvider,
         )
+    }
+
+    val unparsedNotificationRepository: UnparsedNotificationRepository by lazy {
+        UnparsedNotificationRepository(dao = database.unparsedNotificationDao(), timeProvider = timeProvider)
     }
 
     val claimRepository: ClaimRepository by lazy {
