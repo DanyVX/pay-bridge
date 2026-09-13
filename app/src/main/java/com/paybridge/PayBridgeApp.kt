@@ -1,12 +1,20 @@
 package com.paybridge
 
 import android.app.Application
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.paybridge.data.local.PayBridgeDatabase
 import com.paybridge.data.repository.ClaimRepository
+import com.paybridge.data.repository.ListenerStatusRepository
+import com.paybridge.domain.listener.ListenerStatusChecker
 import com.paybridge.domain.matching.MatchingEngine
 import com.paybridge.parser.ParserRegistry
 import com.paybridge.util.SystemTimeProvider
 import com.paybridge.util.TimeProvider
+import com.paybridge.work.ClaimTimeoutWorker
+import com.paybridge.work.ListenerHeartbeatWorker
+import java.util.concurrent.TimeUnit
 
 /**
  * Composition root. No DI framework (Hilt) is used here — the object graph is small enough
@@ -21,6 +29,16 @@ class PayBridgeApp : Application() {
     val timeProvider: TimeProvider by lazy { SystemTimeProvider() }
 
     private val parserRegistry: ParserRegistry by lazy { ParserRegistry() }
+
+    private val listenerStatusChecker: ListenerStatusChecker by lazy { ListenerStatusChecker(this) }
+
+    val listenerStatusRepository: ListenerStatusRepository by lazy {
+        ListenerStatusRepository(
+            checker = listenerStatusChecker,
+            heartbeatDao = database.listenerHeartbeatDao(),
+            timeProvider = timeProvider,
+        )
+    }
 
     val matchingEngine: MatchingEngine by lazy {
         MatchingEngine(
@@ -39,6 +57,28 @@ class PayBridgeApp : Application() {
             parserRegistry = parserRegistry,
             timeProvider = timeProvider,
             matchingEngine = matchingEngine,
+        )
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        schedulePeriodicWork()
+    }
+
+    private fun schedulePeriodicWork() {
+        val workManager = WorkManager.getInstance(this)
+
+        // 15 minutes is WorkManager's periodic floor — see ListenerHeartbeatWorker/ClaimTimeoutWorker
+        // doc comments for why each is a backstop rather than the primary mechanism.
+        workManager.enqueueUniquePeriodicWork(
+            "listener-heartbeat",
+            ExistingPeriodicWorkPolicy.KEEP,
+            PeriodicWorkRequestBuilder<ListenerHeartbeatWorker>(15, TimeUnit.MINUTES).build(),
+        )
+        workManager.enqueueUniquePeriodicWork(
+            "claim-timeout-sweep",
+            ExistingPeriodicWorkPolicy.KEEP,
+            PeriodicWorkRequestBuilder<ClaimTimeoutWorker>(15, TimeUnit.MINUTES).build(),
         )
     }
 }
