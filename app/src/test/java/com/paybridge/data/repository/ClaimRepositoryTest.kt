@@ -1,12 +1,14 @@
 package com.paybridge.data.repository
 
 import com.paybridge.data.notification.NotificationPayload
+import com.paybridge.domain.matching.MatchingEngine
 import com.paybridge.domain.model.Provider
 import com.paybridge.parser.ParserRegistry
 import com.paybridge.parser.PaymentNotificationParser
 import com.paybridge.parser.ParseResult
 import com.paybridge.testing.FakeClaimDao
 import com.paybridge.testing.FakeIncomingNotificationDao
+import com.paybridge.testing.FakeListenerHeartbeatDao
 import com.paybridge.testing.FakeTimeProvider
 import com.paybridge.testing.FakeUnparsedNotificationDao
 import kotlinx.coroutines.test.runTest
@@ -32,12 +34,19 @@ class ClaimRepositoryTest {
         incomingDao = FakeIncomingNotificationDao()
         unparsedDao = FakeUnparsedNotificationDao()
         timeProvider = FakeTimeProvider(1_000_000L)
+        val matchingEngine = MatchingEngine(
+            claimDao = claimDao,
+            incomingNotificationDao = incomingDao,
+            listenerHeartbeatDao = FakeListenerHeartbeatDao(),
+            timeProvider = timeProvider,
+        )
         return ClaimRepository(
             claimDao = claimDao,
             incomingNotificationDao = incomingDao,
             unparsedNotificationDao = unparsedDao,
             parserRegistry = ParserRegistry(mapOf(Provider.NAYAPAY to parser)),
             timeProvider = timeProvider,
+            matchingEngine = matchingEngine,
         )
     }
 
