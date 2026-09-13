@@ -3,6 +3,7 @@ package com.paybridge
 import android.app.Application
 import com.paybridge.data.local.PayBridgeDatabase
 import com.paybridge.data.repository.ClaimRepository
+import com.paybridge.domain.matching.MatchingEngine
 import com.paybridge.parser.ParserRegistry
 import com.paybridge.util.SystemTimeProvider
 import com.paybridge.util.TimeProvider
@@ -21,6 +22,15 @@ class PayBridgeApp : Application() {
 
     private val parserRegistry: ParserRegistry by lazy { ParserRegistry() }
 
+    val matchingEngine: MatchingEngine by lazy {
+        MatchingEngine(
+            claimDao = database.claimDao(),
+            incomingNotificationDao = database.incomingNotificationDao(),
+            listenerHeartbeatDao = database.listenerHeartbeatDao(),
+            timeProvider = timeProvider,
+        )
+    }
+
     val claimRepository: ClaimRepository by lazy {
         ClaimRepository(
             claimDao = database.claimDao(),
@@ -28,6 +38,7 @@ class PayBridgeApp : Application() {
             unparsedNotificationDao = database.unparsedNotificationDao(),
             parserRegistry = parserRegistry,
             timeProvider = timeProvider,
+            matchingEngine = matchingEngine,
         )
     }
 }

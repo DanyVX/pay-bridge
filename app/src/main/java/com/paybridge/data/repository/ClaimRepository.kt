@@ -8,6 +8,7 @@ import com.paybridge.data.local.entity.IncomingNotificationEntity
 import com.paybridge.data.local.entity.UnparsedNotificationEntity
 import com.paybridge.data.notification.NotificationPayload
 import com.paybridge.domain.matching.DedupeKeyGenerator
+import com.paybridge.domain.matching.MatchingEngine
 import com.paybridge.domain.model.ClaimStatus
 import com.paybridge.domain.model.Provider
 import com.paybridge.parser.FailureReason
@@ -30,6 +31,7 @@ class ClaimRepository(
     private val unparsedNotificationDao: UnparsedNotificationDao,
     private val parserRegistry: ParserRegistry,
     private val timeProvider: TimeProvider,
+    private val matchingEngine: MatchingEngine,
 ) {
 
     fun observeAllClaims(): Flow<List<ClaimEntity>> = claimDao.observeAll()
@@ -38,18 +40,18 @@ class ClaimRepository(
 
     suspend fun createClaim(amount: Long, provider: Provider?, timeoutMillis: Long): Long {
         val now = timeProvider.nowMillis()
-        return claimDao.insert(
-            ClaimEntity(
-                expectedAmount = amount,
-                expectedProvider = provider?.name,
-                createdAt = now,
-                timeoutAt = now + timeoutMillis,
-                status = ClaimStatus.PENDING.name,
-            )
+        val claim = ClaimEntity(
+            expectedAmount = amount,
+            expectedProvider = provider?.name,
+            createdAt = now,
+            timeoutAt = now + timeoutMillis,
+            status = ClaimStatus.PENDING.name,
         )
-        // Note: matching against notifications that already arrived moments before this claim
-        // was created is handled by MatchingEngine.onClaimCreated, called by the caller of this
-        // method (see NewClaimScreen's view-model) once the engine exists.
+        val id = claimDao.insert(claim)
+        // Catches the case where the payment notification arrived a few seconds before the
+        // shopkeeper finished typing the claim.
+        matchingEngine.onClaimCreated(claim.copy(id = id))
+        return id
     }
 
     /**
@@ -107,18 +109,16 @@ class ClaimRepository(
             return
         }
 
-        incomingNotificationDao.insert(
-            IncomingNotificationEntity(
-                provider = payment.provider.name,
-                amount = payment.amount,
-                reference = payment.reference,
-                rawText = payment.rawText,
-                postTime = payment.postTime,
-                receivedAt = timeProvider.nowMillis(),
-                dedupeKey = dedupeKey.value,
-            )
+        val entity = IncomingNotificationEntity(
+            provider = payment.provider.name,
+            amount = payment.amount,
+            reference = payment.reference,
+            rawText = payment.rawText,
+            postTime = payment.postTime,
+            receivedAt = timeProvider.nowMillis(),
+            dedupeKey = dedupeKey.value,
         )
-        // Note: triggering MatchingEngine.tryMatch against pending claims happens once the
-        // matching engine exists — see PaymentNotificationListenerService call site.
+        val id = incomingNotificationDao.insert(entity)
+        matchingEngine.tryMatch(entity.copy(id = id))
     }
 }
