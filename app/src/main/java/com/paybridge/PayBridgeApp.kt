@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.paybridge.data.local.OnboardingPreferences
 import com.paybridge.data.local.PayBridgeDatabase
 import com.paybridge.data.repository.ClaimRepository
 import com.paybridge.data.repository.ListenerStatusRepository
@@ -25,6 +26,8 @@ import java.util.concurrent.TimeUnit
 class PayBridgeApp : Application() {
 
     val database: PayBridgeDatabase by lazy { PayBridgeDatabase.getInstance(this) }
+
+    val onboardingPreferences: OnboardingPreferences by lazy { OnboardingPreferences(this) }
 
     val timeProvider: TimeProvider by lazy { SystemTimeProvider() }
 
