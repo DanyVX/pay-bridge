@@ -1,0 +1,18 @@
+*.iml
+.gradle/
+/local.properties
+.idea/
+.DS_Store
+/build
+/captures
+.externalNativeBuildD
+.cxx
+*.apk
+*.aab
+
+# Signing material — never commit a real keystore or its credentials.
+*.jks
+*.keystore
+keystore/
+
+*.log
