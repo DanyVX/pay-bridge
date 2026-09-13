@@ -21,6 +21,10 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import com.paybridge.ui.claim.ClaimResultScreen
+import com.paybridge.ui.claim.NewClaimScreen
 import com.paybridge.ui.home.HomeScreen
 import com.paybridge.ui.onboarding.PermissionSetupScreen
 import com.paybridge.ui.onboarding.TrustScreen
@@ -105,12 +109,20 @@ private fun PayBridgeNavHost(app: PayBridgeApp) {
             )
         }
         composable("new-claim") {
-            // Replaced by the real NewClaimScreen in the next commit.
-            PlaceholderScreen("New expected payment — coming up next")
+            NewClaimScreen(onStartWaiting = { amount, provider, timeoutMillis ->
+                coroutineScope.launch {
+                    val id = app.claimRepository.createClaim(amount, provider, timeoutMillis)
+                    navController.navigate("claim/$id") { popUpTo("home") }
+                }
+            })
         }
-        composable("claim/{claimId}") {
-            // Replaced by the real ClaimResultScreen in the next commit.
-            PlaceholderScreen("Claim result — coming up next")
+        composable(
+            "claim/{claimId}",
+            arguments = listOf(navArgument("claimId") { type = NavType.LongType }),
+        ) { backStackEntry ->
+            val claimId = backStackEntry.arguments?.getLong("claimId") ?: return@composable
+            val claim by app.claimRepository.observeClaim(claimId).collectAsState(initial = null)
+            ClaimResultScreen(claim = claim, onTick = { app.matchingEngine.resolveTimeouts() })
         }
         composable("history") {
             // Replaced by the real HistoryScreen in a later commit.
