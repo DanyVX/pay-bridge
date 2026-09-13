@@ -3,28 +3,26 @@ package com.paybridge
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.paybridge.ui.claim.ClaimResultScreen
 import com.paybridge.ui.claim.NewClaimScreen
+import com.paybridge.ui.history.HistoryScreen
 import com.paybridge.ui.home.HomeScreen
 import com.paybridge.ui.onboarding.PermissionSetupScreen
 import com.paybridge.ui.onboarding.TrustScreen
@@ -125,15 +123,14 @@ private fun PayBridgeNavHost(app: PayBridgeApp) {
             ClaimResultScreen(claim = claim, onTick = { app.matchingEngine.resolveTimeouts() })
         }
         composable("history") {
-            // Replaced by the real HistoryScreen in a later commit.
-            PlaceholderScreen("History — coming up next")
+            val claims by app.claimRepository.observeAllClaims().collectAsState(initial = emptyList())
+            val unparsedCounts by app.unparsedNotificationRepository.countsLast24h()
+                .collectAsState(initial = emptyMap())
+            HistoryScreen(
+                claims = claims,
+                unparsedCounts = unparsedCounts,
+                onClaimClick = { id -> navController.navigate("claim/$id") },
+            )
         }
-    }
-}
-
-@Composable
-private fun PlaceholderScreen(label: String) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(label)
     }
 }
