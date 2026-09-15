@@ -22,6 +22,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.paybridge.ui.claim.ClaimResultScreen
 import com.paybridge.ui.claim.NewClaimScreen
+import com.paybridge.ui.diagnostics.DiagnosticsScreen
 import com.paybridge.ui.history.HistoryScreen
 import com.paybridge.ui.home.HomeScreen
 import com.paybridge.ui.onboarding.PermissionSetupScreen
@@ -104,6 +105,7 @@ private fun PayBridgeNavHost(app: PayBridgeApp) {
                 onNewClaim = { navController.navigate("new-claim") },
                 onClaimClick = { id -> navController.navigate("claim/$id") },
                 onViewHistory = { navController.navigate("history") },
+                onOpenDiagnostics = { navController.navigate("diagnostics") },
             )
         }
         composable("new-claim") {
@@ -131,6 +133,11 @@ private fun PayBridgeNavHost(app: PayBridgeApp) {
                 unparsedCounts = unparsedCounts,
                 onClaimClick = { id -> navController.navigate("claim/$id") },
             )
+        }
+        composable("diagnostics") {
+            val unparsedCounts by app.unparsedNotificationRepository.countsLast24h()
+                .collectAsState(initial = emptyMap())
+            DiagnosticsScreen(listenerEnabled = listenerEnabled, unparsedCounts = unparsedCounts)
         }
     }
 }

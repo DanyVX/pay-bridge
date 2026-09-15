@@ -28,6 +28,7 @@ fun HomeScreen(
     onNewClaim: () -> Unit,
     onClaimClick: (Long) -> Unit,
     onViewHistory: () -> Unit,
+    onOpenDiagnostics: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         ListenerStatusBanner(isEnabled = listenerEnabled)
@@ -61,6 +62,9 @@ fun HomeScreen(
         Column(modifier = Modifier.padding(16.dp)) {
             OutlinedButton(onClick = onViewHistory, modifier = Modifier.fillMaxWidth()) {
                 Text("View History")
+            }
+            TextButton(onClick = onOpenDiagnostics, modifier = Modifier.fillMaxWidth()) {
+                Text("Diagnostics")
             }
         }
     }
