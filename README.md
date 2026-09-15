@@ -1,5 +1,7 @@
 # PayBridge
 
+[![Android CI](https://github.com/DanyVX/pay-bridge/actions/workflows/android-ci.yml/badge.svg)](https://github.com/DanyVX/pay-bridge/actions/workflows/android-ci.yml)
+
 An Android app that lets a shopkeeper confirm a NayaPay/Easypaisa/JazzCash payment actually
 landed — by reading the shopkeeper's own phone's notification stream — instead of trusting a
 customer's screenshot. See the original project brief for the full rationale; this README covers
@@ -13,10 +15,12 @@ build/run/test instructions and current implementation status.
 ./gradlew connectedAndroidTest    # instrumented Room DAO tests (needs a connected device/emulator)
 ```
 
-Requires a local Android SDK (set `sdk.dir` in `local.properties`, or have `ANDROID_HOME` set) —
-this was developed and committed from an environment without SDK/emulator access, so `assembleDebug`
-and the test suites have **not** been executed end-to-end yet. Do that first thing when you open
-this in Android Studio, before trusting anything else in this README.
+Requires a local Android SDK (set `sdk.dir` in `local.properties`, or have `ANDROID_HOME` set).
+This was originally developed in an environment without SDK/emulator access, so it couldn't be
+compiled locally at the time — **GitHub Actions CI now builds and runs the unit test suite on
+every push to `main`** (see badge above), which is the real verification this project was
+missing. `connectedAndroidTest` (the instrumented Room DAO tests) still needs a real device or
+emulator, which CI doesn't run here — do that once in Android Studio before relying on it.
 
 minSdk 26 (Android 8.0) / compileSdk & targetSdk 34. Not submitted to Google Play — see
 "Distribution" below.
@@ -73,6 +77,9 @@ finished product.** Specifically:
   callbacks, and via a 15-minute WorkManager backstop for while the app is closed.
 - Full UI flow: first-launch trust screen, notification-access permission flow with a persistent
   ACTIVE/NOT RUNNING banner, new-claim entry, the stamp-badge result screen, and history.
+- A Diagnostics screen (Home → Diagnostics) for support across many independently-deployed
+  phones with no backend: app version, live listener status, which allowlisted payment-app
+  packages are actually installed on this device, and unparsed-notification counts per provider.
 
 **Open edge case, not fully closed:** the WorkManager heartbeat backstop only narrows — it can't
 fully close — the blind spot where the listener dies while the app is closed the whole time a
@@ -100,7 +107,7 @@ uses, across a real reboot and a real period of normal day-to-day phone usage.**
    three apps installed.
 2. Verify the real package names in `PaymentAppAllowlist.kt`.
 3. Implement the three parsers against those real samples and un-skip their `@Ignore`d tests.
-4. Run the full test suite and `assembleDebug` for the first time in a real Android Studio/SDK
-   environment (not yet done from this session).
+4. Run `connectedAndroidTest` (instrumented Room DAO tests) once against a real device or
+   emulator in Android Studio — CI covers unit tests and the debug build, not this.
 5. Sideload onto a real test phone and validate across a reboot before trusting it for a real
    transaction.
